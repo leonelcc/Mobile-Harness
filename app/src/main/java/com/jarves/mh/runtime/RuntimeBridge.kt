@@ -49,7 +49,16 @@ internal fun localServerPlaceholderKey(profile: ProviderProfile): String =
     if (profile.kind == com.jarves.mh.model.ProviderKind.CUSTOM) "no-key-required" else ""
 
 object RuntimeLaunchConfigBuilder {
-    fun build(profile: ProviderProfile, authToken: String? = null, localGatewayUrl: String? = null): RuntimeLaunchConfig {
+    /**
+     * [allowStoredLogin] deixa o provedor Claude rodar sem token colado, usando o login que
+     * `claude auth login` salvou no Linux do app.
+     */
+    fun build(
+        profile: ProviderProfile,
+        authToken: String? = null,
+        localGatewayUrl: String? = null,
+        allowStoredLogin: Boolean = false,
+    ): RuntimeLaunchConfig {
         val environment = linkedMapOf(
             "DISABLE_AUTOUPDATER" to "1",
             // Skip telemetry, error reporting and other background network calls. Each one costs
@@ -60,8 +69,9 @@ object RuntimeLaunchConfigBuilder {
         )
         when (profile.kind.protocol) {
             com.jarves.mh.model.ProviderProtocol.CLAUDE_LOGIN -> {
-                require(!authToken.isNullOrBlank()) { "Enter a Claude subscription token first" }
-                environment["CLAUDE_CODE_OAUTH_TOKEN"] = authToken
+                if (!allowStoredLogin) require(!authToken.isNullOrBlank()) { "Enter a Claude subscription token first" }
+                // Token colado, se houver, tem precedência sobre o login salvo.
+                if (!authToken.isNullOrBlank()) environment["CLAUDE_CODE_OAUTH_TOKEN"] = authToken
                 // Claude Code gives API-key variables precedence over OAuth. Explicitly
                 // clear them so a previous API provider can never shadow this token.
                 environment["ANTHROPIC_API_KEY"] = ""

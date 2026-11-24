@@ -112,9 +112,11 @@ class ClaudeRuntimeBridge(
         eventBus.emit(RuntimeEvent.SessionStarted(sessionId))
         pushForegroundProgress(R.string.rt_bridge_starting, "Claude Code")
         val secret = secretFor(provider).orEmpty().ifBlank { localServerPlaceholderKey(provider) }
-        if (secret.isBlank()) {
+        // Login feito pelo /login do app substitui o token colado.
+        val storedLogin = provider.kind == ProviderKind.CLAUDE && installer.hasClaudeLogin()
+        if (secret.isBlank() && !storedLogin) {
             val message = if (provider.kind == ProviderKind.CLAUDE) {
-                "No Claude subscription token is saved. Add one from Agent → AI provider."
+                "No Claude subscription token is saved. Add one from Agent → AI provider, or type /login."
             } else {
                 "No API key is saved for ${provider.kind.title}."
             }
@@ -156,6 +158,7 @@ class ClaudeRuntimeBridge(
                 provider,
                 authToken = secret,
                 localGatewayUrl = formatGateway?.url ?: openRouterGateway?.url,
+                allowStoredLogin = storedLogin,
             )
             Log.d("ClaudeBridge", "Provider: ${provider.kind}, Model: ${provider.model}, BaseUrl: ${provider.baseUrl}")
             Log.d("ClaudeBridge", "Launch environment keys: ${launch.environment.keys}")

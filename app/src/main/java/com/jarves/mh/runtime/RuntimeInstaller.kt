@@ -1635,6 +1635,9 @@ class RuntimeInstaller(private val context: Context) {
         )
     }
 
+    /** Há login do Claude salvo no Linux do app (feito por `claude auth login`). */
+    fun hasClaudeLogin(): Boolean = File(rootfs, "root/.claude/.credentials.json").isFile
+
     fun ensureSettingsAndHooks() {
         val hook = File(rootfs, "opt/pocket/permission-hook.sh")
         hook.parentFile?.mkdirs()

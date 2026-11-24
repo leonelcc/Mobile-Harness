@@ -299,6 +299,16 @@ private enum class WorkspaceTab(@StringRes val labelRes: Int, val icon: ImageVec
 @Composable
 fun PocketDevApp(viewModel: MainViewModel = viewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val loginState by viewModel.claudeLoginState.collectAsStateWithLifecycle()
+    // É uma janela por cima de qualquer tela, então não depende do when abaixo.
+    if (state.loginDialogOpen) {
+        ClaudeLoginDialog(
+            state = loginState,
+            onStart = viewModel::startClaudeLogin,
+            onSubmitCode = viewModel::submitClaudeLoginCode,
+            onClose = viewModel::closeClaudeLogin,
+        )
+    }
     val context = LocalContext.current
     val projectsListState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     LaunchedEffect(state.toastMessage) {
