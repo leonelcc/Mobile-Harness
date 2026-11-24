@@ -13,18 +13,21 @@ class ApprovalRulesTest {
         assertEquals("grep", ApprovalRules.ruleFor("grep -rn foo ."))
     }
 
-    @Test fun subcommandToolsIncludeTheSubcommand() {
+    @Test fun gitOnlyForReadOnlySubcommands() {
         assertEquals("git status", ApprovalRules.ruleFor("git status -sb"))
-        assertEquals("npm test", ApprovalRules.ruleFor("npm test"))
+        assertEquals("git log", ApprovalRules.ruleFor("git log --oneline -5"))
+        assertNull(ApprovalRules.ruleFor("git push"))
+        assertNull(ApprovalRules.ruleFor("git commit -m x"))
         assertNull(ApprovalRules.ruleFor("git -c core.pager=x log"))
-        assertNull(ApprovalRules.ruleFor("npm"))
+        assertNull(ApprovalRules.ruleFor("git diff --output=/pocket-bridge/x.response"))
+        assertNull(ApprovalRules.ruleFor("git log --ext-diff"))
+        assertNull(ApprovalRules.ruleFor("git show -O/tmp/x"))
     }
 
     @Test fun refusesToolsOutsideTheLists() {
-        assertNull(ApprovalRules.ruleFor("rm -rf build"))
-        assertNull(ApprovalRules.ruleFor("curl http://x"))
-        assertNull(ApprovalRules.ruleFor("mv a /pocket-bridge/b.response"))
-        assertNull(ApprovalRules.ruleFor("./run.sh"))
+        listOf("rm -rf build", "curl http://x", "mv a /pocket-bridge/b.response", "./run.sh",
+            "npm test", "npm run build", "rg --pre sh x", "sort -o f x", "tree -o f", "uniq a b")
+            .forEach { assertNull(it, ApprovalRules.ruleFor(it)) }
     }
 
     @Test fun refusesChainingRedirectionAndExpansion() {
@@ -35,6 +38,7 @@ class ApprovalRulesTest {
     @Test fun matchesOnlySimpleCommandsWithTheRulePrefix() {
         assertTrue(ApprovalRules.matches("git status", "git status -sb"))
         assertFalse(ApprovalRules.matches("git status", "git push"))
+        assertFalse(ApprovalRules.matches("git diff", "git diff --output=x"))
         assertFalse(ApprovalRules.matches("git status", "git status; rm -rf x"))
         assertFalse(ApprovalRules.matches("ls", "lsof"))
         assertFalse(ApprovalRules.matches("ls", "ls | sh"))
