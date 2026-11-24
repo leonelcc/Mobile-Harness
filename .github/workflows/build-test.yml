@@ -37,6 +37,10 @@ jobs:
         env:
           STORE_B64: ${{ secrets.MH_UPLOAD_STORE_BASE64 }}
         run: printf '%s' "$STORE_B64" | base64 -d > fork-release.jks
+      # Informativo: mostra se os testes unitários passam sem bloquear a geração do APK.
+      - name: Testes unitários
+        continue-on-error: true
+        run: ./gradlew --no-daemon testOnlineDebugUnitTest
       - name: Compila e assina o APK
         env:
           MH_UPLOAD_STORE_FILE: fork-release.jks
