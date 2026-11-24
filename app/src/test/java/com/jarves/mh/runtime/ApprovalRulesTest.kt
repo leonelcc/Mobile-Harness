@@ -22,11 +22,18 @@ class ApprovalRulesTest {
         assertNull(ApprovalRules.ruleFor("git diff --output=/pocket-bridge/x.response"))
         assertNull(ApprovalRules.ruleFor("git log --ext-diff"))
         assertNull(ApprovalRules.ruleFor("git show -O/tmp/x"))
+        // O shell tira as aspas antes do git ver o argumento.
+        assertNull(ApprovalRules.ruleFor("git diff \"--output=/tmp/x\""))
+        assertNull(ApprovalRules.ruleFor("git diff '--output=/tmp/x'"))
+        // O git aceita abreviação de opção longa; só flags da allowlist passam.
+        assertNull(ApprovalRules.ruleFor("git diff --outp=/tmp/x"))
+        assertNull(ApprovalRules.ruleFor("git log -n 5"))
+        assertEquals("git log", ApprovalRules.ruleFor("git log --oneline -5 src"))
     }
 
     @Test fun refusesToolsOutsideTheLists() {
         listOf("rm -rf build", "curl http://x", "mv a /pocket-bridge/b.response", "./run.sh",
-            "npm test", "npm run build", "rg --pre sh x", "sort -o f x", "tree -o f", "uniq a b")
+            "npm test", "npm run build", "ls *", "cat ~/.ssh/x", "grep \"a b\" f", "rg --pre sh x", "sort -o f x", "tree -o f", "uniq a b")
             .forEach { assertNull(it, ApprovalRules.ruleFor(it)) }
     }
 

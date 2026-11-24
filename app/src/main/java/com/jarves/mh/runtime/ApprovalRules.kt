@@ -12,8 +12,10 @@ import java.io.File
  * geram regra; todo o resto continua pedindo aprovação a cada vez.
  */
 object ApprovalRules {
-    // Caracteres que encadeiam, redirecionam ou expandem outro comando.
-    private val SHELL_META = Regex("""[;&|`$<>(){}\\\n\r]""")
+    // Caracteres que encadeiam, redirecionam ou expandem outro comando. Aspas e curingas entram
+    // porque o shell os resolve antes de o programa ver o argumento: "--output=x" teria o mesmo
+    // efeito que --output=x, mas passaria por uma checagem feita sobre o texto cru.
+    private val SHELL_META = Regex("""[;&|`$<>(){}\\\n\r'"*?\[\]~#!]""")
 
     // Só leitura e sem flag que execute ou grave. Ficaram de fora, de propósito: rg (--pre executa),
     // sort (-o grava, --compress-program executa), uniq (2º argumento grava), tree (-o grava),
@@ -27,8 +29,14 @@ object ApprovalRules {
     // run/test/exec executam scripts que o agente pode ter editado.
     private val READ_ONLY_GIT = setOf("status", "log", "diff", "show")
 
-    // Flags do git que gravam em arquivo ou chamam programa externo.
-    private val GIT_UNSAFE_FLAGS = listOf("--output", "--ext-diff", "--textconv", "--open-files-in-pager", "-O")
+    // Allowlist (não denylist): o git aceita abreviações de opções longas, então "--outp" também
+    // gravaria arquivo. Qualquer flag fora desta lista tira o comando da auto-aprovação.
+    private val GIT_SAFE_FLAGS = setOf(
+        "-s", "-sb", "-b", "-p", "--short", "--branch", "--porcelain", "--oneline", "--graph",
+        "--decorate", "--all", "--stat", "--shortstat", "--numstat", "--name-only", "--name-status",
+        "--cached", "--staged", "--no-color", "--no-ext-diff", "--no-textconv", "--patch", "--abbrev-commit",
+    )
+    private val GIT_COUNT_FLAG = Regex("-\\d+")
 
     /** Regra a gravar para [command], ou nulo quando o botão "Always allow" não deve aparecer. */
     fun ruleFor(command: String): String? {
@@ -36,7 +44,7 @@ object ApprovalRules {
         val tool = tokens[0]
         return when {
             tool in READ_ONLY_TOOLS -> tool
-            tool == "git" && tokens.getOrNull(1) in READ_ONLY_GIT && !hasUnsafeGitFlag(tokens) -> "git ${tokens[1]}"
+            tool == "git" && tokens.getOrNull(1) in READ_ONLY_GIT && gitArgsAreSafe(tokens) -> "git ${tokens[1]}"
             else -> null
         }
     }
@@ -45,12 +53,12 @@ object ApprovalRules {
     fun matches(rule: String, command: String): Boolean {
         val tokens = simpleTokens(command) ?: return false
         val ruleTokens = rule.trim().split(Regex("\\s+"))
-        if (tokens[0] == "git" && hasUnsafeGitFlag(tokens)) return false
+        if (tokens[0] == "git" && !gitArgsAreSafe(tokens)) return false
         return tokens.size >= ruleTokens.size && ruleTokens.indices.all { tokens[it] == ruleTokens[it] }
     }
 
-    private fun hasUnsafeGitFlag(tokens: List<String>) =
-        tokens.any { token -> GIT_UNSAFE_FLAGS.any { token == it || token.startsWith("$it=") || (it.length > 2 && token.startsWith(it)) } }
+    private fun gitArgsAreSafe(tokens: List<String>) =
+        tokens.drop(2).all { !it.startsWith("-") || it in GIT_SAFE_FLAGS || GIT_COUNT_FLAG.matches(it) }
 
     private fun simpleTokens(command: String): List<String>? {
         val text = command.trim()
