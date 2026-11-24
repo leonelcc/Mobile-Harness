@@ -1,5 +1,7 @@
-# Workflow só do fork: compila o APK debug de qualquer branch para teste em aparelho.
-name: build-debug-apk
+# Workflow só do fork: compila e assina o APK de qualquer branch para teste em aparelho.
+# A chave de assinatura é fixa (segredos do fork): assim cada build novo instala por cima
+# do anterior, sem perder os dados do app.
+name: build-test-apk
 on:
   workflow_dispatch:
     inputs:
@@ -31,8 +33,18 @@ jobs:
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;28.2.13676358" "platforms;android-36" "build-tools;36.0.0" "cmake;3.22.1"
       - uses: gradle/actions/setup-gradle@v4
-      - run: ./gradlew --no-daemon assembleOnlineDebug
+      - name: Restaura a chave de assinatura do fork
+        env:
+          STORE_B64: ${{ secrets.MH_UPLOAD_STORE_BASE64 }}
+        run: printf '%s' "$STORE_B64" | base64 -d > fork-release.jks
+      - name: Compila e assina o APK
+        env:
+          MH_UPLOAD_STORE_FILE: fork-release.jks
+          MH_UPLOAD_STORE_PASSWORD: ${{ secrets.MH_UPLOAD_STORE_PASSWORD }}
+          MH_UPLOAD_KEY_ALIAS: ${{ secrets.MH_UPLOAD_KEY_ALIAS }}
+          MH_UPLOAD_KEY_PASSWORD: ${{ secrets.MH_UPLOAD_KEY_PASSWORD }}
+        run: ./gradlew --no-daemon assembleOnlineRelease
       - uses: actions/upload-artifact@v4
         with:
-          name: mobile-harness-debug-apk
-          path: app/build/outputs/apk/online/debug/*.apk
+          name: mobile-harness-test-apk
+          path: app/build/outputs/apk/online/release/*.apk
