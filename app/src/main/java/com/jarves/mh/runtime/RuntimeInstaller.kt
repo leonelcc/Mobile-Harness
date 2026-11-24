@@ -1651,6 +1651,9 @@ class RuntimeInstaller(private val context: Context) {
                 JSONObject()
                     .put("allow", claudeWorkspaceToolRules())
                     .put("deny", claudeProtectedPathRules())
+                    // Todos os projetos em /workspace ficam editáveis sem perguntar (como antes);
+                    // sem isso o acceptEdits cobriria só o projeto atual.
+                    .put("additionalDirectories", org.json.JSONArray().put("/workspace"))
                     .put("defaultMode", "acceptEdits"),
             )
             .put(
@@ -1712,8 +1715,6 @@ class RuntimeInstaller(private val context: Context) {
         put("Edit(//root/.claude/**)")
         put("Edit(//root/.claude.json)")
         put("Edit(//etc/claude/**)")
-        // Configurações do próprio projeto também podem liberar o Bash na próxima execução.
-        put("Edit(.claude/**)")
     }
 
     private fun claudeWorkspaceToolRules() = org.json.JSONArray().apply {
