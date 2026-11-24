@@ -4703,6 +4703,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun sendPrompt(prompt: String) {
         val project = state.value.activeProject ?: return
+        // Anexos pendentes indicam um pedido ao agente, então "/" só vira comando sem anexos.
+        if (state.value.pendingAttachments.isEmpty()) {
+            parseSlashCommand(prompt)?.let { command ->
+                runSlashCommand(command, prompt.trim())
+                return
+            }
+        }
         if (_state.value.agentKind == AgentKind.ANTIGRAVITY &&
             _state.value.antigravityAuth.status != AntigravityAuthStatus.SIGNED_IN) {
             _state.update { it.copy(toastMessage = str(R.string.vm_antigravity_signin_before_task)) }
@@ -4723,6 +4730,53 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
         startPrompt(project, prompt, attachments)
+    }
+
+    /** Executa um comando "/" no app e responde no chat, sem acionar o agente. */
+    private fun runSlashCommand(command: SlashCommand, typed: String) {
+        val current = _state.value
+        val busy = current.isRunning || current.androidBuildRunning
+        when (command) {
+            SlashCommand.Help -> replyInChat(typed, SLASH_HELP_TEXT)
+            SlashCommand.Status -> replyInChat(
+                typed,
+                buildString {
+                    appendLine("Agent: ${current.agentKind.title}")
+                    appendLine("Provider: ${current.provider.kind.title}")
+                    appendLine("Model: ${currentModelName(current)}")
+                    append("Project: ${current.activeProject?.name.orEmpty()}")
+                },
+            )
+            SlashCommand.Clear ->
+                // createChat() já ignora o pedido durante uma execução; avisar evita um "nada aconteceu".
+                if (busy) replyInChat(typed, "The agent is still working. Stop it before starting a new chat.")
+                else createChat()
+            is SlashCommand.Model -> when {
+                command.model == null -> replyInChat(typed, "Current model: ${currentModelName(current)}\nUse /model <id> to switch.")
+                // A execução em andamento já foi iniciada com o modelo antigo; trocar agora confundiria.
+                busy -> replyInChat(typed, "The agent is still working. Switch the model when it finishes.")
+                else -> {
+                    if (current.agentKind == AgentKind.ANTIGRAVITY) {
+                        setAntigravityModel(command.model)
+                    } else {
+                        val updated = current.provider.copy(model = command.model)
+                        preferences.saveProvider(updated, current.agentKind)
+                        _state.update { it.copy(provider = updated) }
+                    }
+                    replyInChat(typed, "Model set to ${command.model}. It applies from your next message.")
+                }
+            }
+        }
+    }
+
+    private fun currentModelName(state: AppUiState): String =
+        if (state.agentKind == AgentKind.ANTIGRAVITY) state.antigravityModel.ifBlank { "(default)" } else state.provider.model
+
+    private fun replyInChat(typed: String, reply: String) {
+        _state.update {
+            it.copy(messages = it.messages + ChatMessage(fromUser = true, text = typed) + ChatMessage(fromUser = false, text = reply))
+        }
+        persistMessages()
     }
 
     private fun queueFollowUp(project: Project, prompt: String, attachments: List<ChatAttachment>) {
