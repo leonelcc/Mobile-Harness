@@ -1712,7 +1712,11 @@ class RuntimeInstaller(private val context: Context) {
     private fun claudeProtectedPathRules() = org.json.JSONArray().apply {
         put("Edit(//pocket-bridge/**)")
         put("Edit(//opt/pocket/**)")
-        put("Edit(//root/.claude/**)")
+        // Só os arquivos de configuração, não a pasta toda: /root/.claude/projects/*/memory
+        // guarda a memória do agente e precisa continuar gravável.
+        put("Edit(//root/.claude/settings.json)")
+        put("Edit(//root/.claude/settings.local.json)")
+        put("Edit(//root/.claude/pocket-settings.json)")
         put("Edit(//root/.claude.json)")
         put("Edit(//etc/claude/**)")
     }
