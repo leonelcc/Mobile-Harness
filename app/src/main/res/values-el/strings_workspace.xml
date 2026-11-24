@@ -144,7 +144,7 @@
     <string name="ws_remove_attachment">Κατάργηση συνημμένου</string>
     <string name="ws_review_action">Ελέγξτε αυτή την ενέργεια</string>
     <string name="ws_reject">Απόρριψη</string>
-    <string name="ws_allow_once">Να επιτρέπεται μία φορά</string>
+    <string name="ws_allow_once">Να επιτρέπεται μία φορά</string><string name="ws_allow_always">Να επιτρέπεται πάντα</string>
     <string name="ws_project_files">Αρχεία έργου</string>
     <string name="ws_review_ai_changes">Ελέγξτε όλες τις αλλαγές του AI.</string>
     <string name="ws_no_changes_yet">Δεν υπάρχουν αλλαγές ακόμη</string>

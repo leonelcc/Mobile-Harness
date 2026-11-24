@@ -18,6 +18,8 @@ interface RuntimeBridge {
     val events: Flow<RuntimeEvent>
     suspend fun startSession(projectId: String, projectSlug: String, projectKind: ProjectKind, prompt: String, conversationHistory: List<ChatMessage>, provider: ProviderProfile): String    suspend fun respondToApproval(request: ToolRequest, approved: Boolean)
     suspend fun stopSession(sessionId: String)
+    /** Grava a aprovação como permanente; runtimes sem esse recurso ignoram. */
+    suspend fun rememberApproval(request: ToolRequest) {}
     suspend fun stopActiveSession()
     suspend fun undoLastChanges(projectId: String): Boolean
     suspend fun acceptLastChanges(projectId: String)

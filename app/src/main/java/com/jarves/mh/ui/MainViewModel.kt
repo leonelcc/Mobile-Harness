@@ -41,6 +41,7 @@ import com.jarves.mh.model.ProjectChat
 import com.jarves.mh.model.ProviderKind
 import com.jarves.mh.model.ProviderProfile
 import com.jarves.mh.model.RuntimeEvent
+import com.jarves.mh.model.ApprovalChoice
 import com.jarves.mh.model.ToolRequest
 import com.jarves.mh.model.WorkspaceEntry
 import com.jarves.mh.model.projectSlug
@@ -4876,9 +4877,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun answerApproval(approved: Boolean) {
+    fun answerApproval(choice: ApprovalChoice) {
         val request = state.value.pendingApproval ?: return
-        viewModelScope.launch { activeRuntime().respondToApproval(request, approved) }
+        viewModelScope.launch {
+            val runtime = activeRuntime()
+            // Grava a regra antes de responder: se o app morrer no meio, o pior caso é perguntar de novo.
+            if (choice == ApprovalChoice.ALLOW_ALWAYS) runtime.rememberApproval(request)
+            runtime.respondToApproval(request, choice != ApprovalChoice.REJECT)
+        }
     }
 
     fun stopTask() {

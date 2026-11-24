@@ -75,6 +75,7 @@ class ClaudeRuntimeBridge(
     private val eventBus = MutableSharedFlow<RuntimeEvent>(extraBufferCapacity = 64)
     override val events: Flow<RuntimeEvent> = eventBus
     private val pending = ConcurrentHashMap<String, PendingPermission>()
+    private val approvalRules = ApprovalRuleStore(File(context.filesDir, "approval-rules.json"))
     private val toolNames = ConcurrentHashMap<String, String>()
     private val seenToolCalls = ConcurrentHashMap.newKeySet<String>()
     private val finishedSessions = ConcurrentHashMap.newKeySet<String>()
@@ -344,6 +345,11 @@ class ClaudeRuntimeBridge(
         }
     }
 
+    override suspend fun rememberApproval(request: ToolRequest) {
+        val rule = request.alwaysAllowRule ?: return
+        withContext(Dispatchers.IO) { approvalRules.add(rule) }
+    }
+
     override suspend fun respondToApproval(request: ToolRequest, approved: Boolean) = withContext(Dispatchers.IO) {
         val permission = pending.remove(request.approvalId) ?: return@withContext
         permission.response.writeText(if (approved) "allow" else "deny")
@@ -452,6 +458,13 @@ class ClaudeRuntimeBridge(
                         .ifBlank { command.orEmpty() }
                         .ifBlank { "$toolName running in project" }
 
+                    // Comando já liberado com "Always allow": responde sem incomodar o usuário.
+                    if (command != null && approvalRules.isAllowed(command)) {
+                        File(file.parentFile, "$approvalId.response").writeText("allow")
+                        file.delete()
+                        eventBus.emit(RuntimeEvent.ToolCompleted(sessionId, toolName, explanation))
+                        return@runCatching
+                    }
                     val request = ToolRequest(
                         approvalId = approvalId,
                         sessionId = sessionId,
@@ -460,6 +473,7 @@ class ClaudeRuntimeBridge(
                         affectedPaths = paths,
                         commandPreview = command,
                         risk = RiskLevel.REVIEW,
+                        alwaysAllowRule = command?.let(ApprovalRules::ruleFor),
                     )
                     pending[approvalId] = PendingPermission(request, File(file.parentFile, "$approvalId.response"))
                     // O hook já leu o pedido; apagar evita reprocessar no próximo ciclo.
