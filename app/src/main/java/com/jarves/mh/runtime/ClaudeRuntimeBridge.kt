@@ -459,7 +459,7 @@ class ClaudeRuntimeBridge(
                         .ifBlank { "$toolName running in project" }
 
                     // Comando já liberado com "Always allow": responde sem incomodar o usuário.
-                    if (command != null && approvalRules.isAllowed(command)) {
+                    if (toolName == "Bash" && command != null && approvalRules.isAllowed(command)) {
                         File(file.parentFile, "$approvalId.response").writeText("allow")
                         file.delete()
                         eventBus.emit(RuntimeEvent.ToolCompleted(sessionId, toolName, explanation))
@@ -473,7 +473,7 @@ class ClaudeRuntimeBridge(
                         affectedPaths = paths,
                         commandPreview = command,
                         risk = RiskLevel.REVIEW,
-                        alwaysAllowRule = command?.let(ApprovalRules::ruleFor),
+                        alwaysAllowRule = command?.takeIf { toolName == "Bash" }?.let(ApprovalRules::ruleFor),
                     )
                     pending[approvalId] = PendingPermission(request, File(file.parentFile, "$approvalId.response"))
                     // O hook já leu o pedido; apagar evita reprocessar no próximo ciclo.
