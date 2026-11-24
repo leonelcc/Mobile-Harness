@@ -297,7 +297,7 @@
     <string name="agent_updates_current">Οι εγκατεστημένοι agents παραμένουν ενημερωμένοι</string>
     <string name="agent_check_updates">Έλεγχος ενημερώσεων</string>
     <string name="agent_security_footer">Κλειδιά API κρυπτογραφημένα στον ασφαλή χώρο αποθήκευσης του Android · Το Τερματικό είναι προσβάσιμο από κάθε έργο</string>
-    <string name="agent_approval_footer">Αυτόματη έγκριση εργαλείων · Εκτελείται μέσα στον ιδιωτικό χώρο εργασίας Linux</string>
+    <string name="agent_approval_footer">Οι εντολές απαιτούν έγκριση · Εκτελείται μέσα στον ιδιωτικό χώρο εργασίας Linux</string>
     <string name="projects_importing">Εισαγωγή…</string>
     <string name="projects_zip_file">Αρχείο ZIP</string>
     <string name="projects_cloning">Κλωνοποίηση…</string>

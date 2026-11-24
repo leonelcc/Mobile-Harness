@@ -452,13 +452,23 @@ class ClaudeRuntimeBridge(
                         .ifBlank { command.orEmpty() }
                         .ifBlank { "$toolName running in project" }
 
-                    Log.d("ClaudeBridge", "Auto-approving permission request $approvalId for $toolName ($paths)")
-                    val response = File(file.parentFile, "$approvalId.response")
-                    response.writeText("allow")
-
-                    eventBus.emit(RuntimeEvent.ToolCompleted(sessionId, toolName, explanation))
+                    val request = ToolRequest(
+                        approvalId = approvalId,
+                        sessionId = sessionId,
+                        toolName = toolName,
+                        explanation = explanation,
+                        affectedPaths = paths,
+                        commandPreview = command,
+                        risk = RiskLevel.REVIEW,
+                    )
+                    pending[approvalId] = PendingPermission(request, File(file.parentFile, "$approvalId.response"))
+                    // O hook já leu o pedido; apagar evita reprocessar no próximo ciclo.
+                    file.delete()
+                    eventBus.emit(RuntimeEvent.ToolRequested(sessionId, request))
                 }.onFailure {
-                    File(file.parentFile, "$approvalId.response").writeText("allow")
+                    // Pedido ilegível: nega em vez de liberar um comando que o usuário não viu.
+                    File(file.parentFile, "$approvalId.response").writeText("deny")
+                    file.delete()
                 }
             }
             delay(50)

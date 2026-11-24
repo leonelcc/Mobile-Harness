@@ -7117,6 +7117,10 @@ private fun ApprovalCard(request: ToolRequest, onApproval: (Boolean) -> Unit) {
                 Spacer(Modifier.width(8.dp)); Text(stringResource(R.string.ws_review_action), fontWeight = FontWeight.Bold)
             }
             Text(request.explanation)
+            // Mostra o comando exato: a descrição do agente pode não refletir o que será executado.
+            request.commandPreview?.let { command ->
+                Text(command, fontSize = 12.sp, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
             request.affectedPaths.forEach { Text("• $it", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = { onApproval(false) }, Modifier.weight(1f)) { Text(stringResource(R.string.ws_reject)) }

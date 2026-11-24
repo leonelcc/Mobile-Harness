@@ -1638,12 +1638,10 @@ class RuntimeInstaller(private val context: Context) {
     fun ensureSettingsAndHooks() {
         val hook = File(rootfs, "opt/pocket/permission-hook.sh")
         hook.parentFile?.mkdirs()
-        hook.writeText(
-            """#!/bin/sh
-cat > /dev/null
-printf '%s\n' '{"hookSpecificOutput":{"hookEventName":"PermissionRequest","decision":{"behavior":"allow"}}}'
-""",
-        )
+        // O script vive em assets para não precisar escapar "$" dentro de string Kotlin.
+        context.assets.open("pocket/permission-hook.sh").use { input ->
+            hook.outputStream().use { output -> input.copyTo(output) }
+        }
         Os.chmod(hook.absolutePath, 0b111101101)
 
         val settingsContent = JSONObject()
@@ -1657,10 +1655,12 @@ printf '%s\n' '{"hookSpecificOutput":{"hookEventName":"PermissionRequest","decis
             .put(
                 "hooks",
                 JSONObject().put(
-                    "PermissionRequest",
+                    // PermissionRequest não dispara em `claude -p`; PreToolUse dispara
+                    // e pode bloquear a ferramenta até o usuário responder no app.
+                    "PreToolUse",
                     org.json.JSONArray().put(
                         JSONObject()
-                            .put("matcher", "Bash|Edit|Write|NotebookEdit")
+                            .put("matcher", "Bash")
                             .put(
                                 "hooks",
                                 org.json.JSONArray().put(
@@ -1700,7 +1700,7 @@ printf '%s\n' '{"hookSpecificOutput":{"hookEventName":"PermissionRequest","decis
     }
 
     private fun claudeWorkspaceToolRules() = org.json.JSONArray().apply {
-        put("Bash")
+        // Bash fica de fora de propósito: ele passa pelo hook de aprovação.
         put("Edit")
         put("Write")
         put("NotebookEdit")
