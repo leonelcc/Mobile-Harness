@@ -8,47 +8,37 @@ import org.junit.Test
 import java.io.File
 
 class ApprovalRulesTest {
-    @Test fun readOnlyToolsUseTheToolName() {
+    @Test fun plainToolsUseTheToolName() {
         assertEquals("ls", ApprovalRules.ruleFor("ls -la /workspace"))
-        assertEquals("grep", ApprovalRules.ruleFor("grep -rn foo ."))
+        assertEquals("python3", ApprovalRules.ruleFor("python3 script.py"))
+        assertEquals("rm", ApprovalRules.ruleFor("rm -rf build"))
+        assertEquals("grep", ApprovalRules.ruleFor("grep \"foo bar\" file.txt"))
     }
 
-    @Test fun gitOnlyForReadOnlySubcommands() {
+    @Test fun subcommandToolsIncludeTheSubcommand() {
         assertEquals("git status", ApprovalRules.ruleFor("git status -sb"))
-        assertEquals("git log", ApprovalRules.ruleFor("git log --oneline -5"))
-        assertNull(ApprovalRules.ruleFor("git push"))
-        assertNull(ApprovalRules.ruleFor("git commit -m x"))
-        assertNull(ApprovalRules.ruleFor("git -c core.pager=x log"))
-        assertNull(ApprovalRules.ruleFor("git diff --output=/pocket-bridge/x.response"))
-        assertNull(ApprovalRules.ruleFor("git log --ext-diff"))
-        assertNull(ApprovalRules.ruleFor("git show -O/tmp/x"))
-        // O shell tira as aspas antes do git ver o argumento.
-        assertNull(ApprovalRules.ruleFor("git diff \"--output=/tmp/x\""))
-        assertNull(ApprovalRules.ruleFor("git diff '--output=/tmp/x'"))
-        // O git aceita abreviação de opção longa; só flags da allowlist passam.
-        assertNull(ApprovalRules.ruleFor("git diff --outp=/tmp/x"))
-        assertNull(ApprovalRules.ruleFor("git log -n 5"))
-        assertEquals("git log", ApprovalRules.ruleFor("git log --oneline -5 src"))
+        assertEquals("git push", ApprovalRules.ruleFor("git push origin main"))
+        assertEquals("npm run", ApprovalRules.ruleFor("npm run build"))
+        assertEquals("pip install", ApprovalRules.ruleFor("pip install requests"))
+        // Sem subcomando, ou com flag no lugar dele, a regra é só a ferramenta.
+        assertEquals("git", ApprovalRules.ruleFor("git -c core.pager=x log"))
+        assertEquals("npm", ApprovalRules.ruleFor("npm"))
     }
 
-    @Test fun refusesToolsOutsideTheLists() {
-        listOf("rm -rf build", "curl http://x", "mv a /pocket-bridge/b.response", "./run.sh",
-            "npm test", "npm run build", "ls *", "cat ~/.ssh/x", "grep \"a b\" f", "rg --pre sh x", "sort -o f x", "tree -o f", "uniq a b")
-            .forEach { assertNull(it, ApprovalRules.ruleFor(it)) }
-    }
-
-    @Test fun refusesChainingRedirectionAndExpansion() {
+    @Test fun neverCreatesOrMatchesRulesForChainedCommands() {
         listOf("ls; rm -rf x", "ls && rm x", "ls | sh", "echo hi > f", "ls `id`", "ls \$(id)", "ls\nrm x", "ls &")
-            .forEach { assertNull(it, ApprovalRules.ruleFor(it)) }
+            .forEach {
+                assertNull(it, ApprovalRules.ruleFor(it))
+                assertFalse(it, ApprovalRules.matches("ls", it))
+            }
     }
 
-    @Test fun matchesOnlySimpleCommandsWithTheRulePrefix() {
+    @Test fun matchesOnlyTheRulePrefix() {
         assertTrue(ApprovalRules.matches("git status", "git status -sb"))
         assertFalse(ApprovalRules.matches("git status", "git push"))
-        assertFalse(ApprovalRules.matches("git diff", "git diff --output=x"))
-        assertFalse(ApprovalRules.matches("git status", "git status; rm -rf x"))
         assertFalse(ApprovalRules.matches("ls", "lsof"))
-        assertFalse(ApprovalRules.matches("ls", "ls | sh"))
+        assertTrue(ApprovalRules.matches("npm run", "npm run build"))
+        assertFalse(ApprovalRules.matches("npm run", "npm install"))
     }
 
     @Test fun storePersistsRules() {

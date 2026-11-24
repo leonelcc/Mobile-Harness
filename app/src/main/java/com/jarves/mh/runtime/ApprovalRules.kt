@@ -6,59 +6,37 @@ import java.io.File
 /**
  * Regras do botão "Always allow" da aprovação de comandos.
  *
- * Por que a regra é estreita: liberar "o comando que o usuário viu" para sempre só é
- * seguro se o texto aprovado não puder embutir outro comando. Por isso só comandos
- * simples (sem encadeamento, pipe, redirecionamento ou expansão) e de uma lista fixa
- * geram regra; todo o resto continua pedindo aprovação a cada vez.
+ * A regra é o início do comando que o usuário aprovou: a ferramenta (`ls`, `python3`) ou, nas
+ * ferramentas que têm subcomando, a ferramenta mais o subcomando (`git status`, `npm run`).
+ * Qualquer comando pode virar regra; a decisão de confiar nele é do usuário.
+ *
+ * Uma única exceção: comandos com encadeamento, pipe, redirecionamento ou expansão nunca
+ * casam com uma regra. Sem isso, liberar `ls` liberaria também `ls; qualquer-coisa`.
  */
 object ApprovalRules {
-    // Caracteres que encadeiam, redirecionam ou expandem outro comando. Aspas e curingas entram
-    // porque o shell os resolve antes de o programa ver o argumento: "--output=x" teria o mesmo
-    // efeito que --output=x, mas passaria por uma checagem feita sobre o texto cru.
-    private val SHELL_META = Regex("""[;&|`$<>(){}\\\n\r'"*?\[\]~#!]""")
+    private val SHELL_META = Regex("""[;&|`$<>(){}\\\n\r]""")
 
-    // Só leitura e sem flag que execute ou grave. Ficaram de fora, de propósito: rg (--pre executa),
-    // sort (-o grava, --compress-program executa), uniq (2º argumento grava), tree (-o grava),
-    // file, date e find. Escrita aqui permitiria forjar a resposta de aprovação.
-    private val READ_ONLY_TOOLS = setOf(
-        "ls", "cat", "head", "tail", "wc", "grep", "pwd", "echo", "which", "stat",
-        "du", "df", "cut", "basename", "dirname", "realpath", "whoami", "uname",
+    // Ferramentas em que o subcomando define o que o comando faz; a regra inclui o subcomando.
+    private val SUBCOMMAND_TOOLS = setOf(
+        "git", "npm", "npx", "pnpm", "yarn", "pip", "pip3", "composer", "cargo", "go", "docker", "apt", "apt-get",
     )
 
-    // git só nos subcomandos que apenas leem o repositório. npm/pnpm/yarn ficam de fora porque
-    // run/test/exec executam scripts que o agente pode ter editado.
-    private val READ_ONLY_GIT = setOf("status", "log", "diff", "show")
-
-    // Allowlist (não denylist): o git aceita abreviações de opções longas, então "--outp" também
-    // gravaria arquivo. Qualquer flag fora desta lista tira o comando da auto-aprovação.
-    private val GIT_SAFE_FLAGS = setOf(
-        "-s", "-sb", "-b", "-p", "--short", "--branch", "--porcelain", "--oneline", "--graph",
-        "--decorate", "--all", "--stat", "--shortstat", "--numstat", "--name-only", "--name-status",
-        "--cached", "--staged", "--no-color", "--no-ext-diff", "--no-textconv", "--patch", "--abbrev-commit",
-    )
-    private val GIT_COUNT_FLAG = Regex("-\\d+")
-
-    /** Regra a gravar para [command], ou nulo quando o botão "Always allow" não deve aparecer. */
+    /** Regra a gravar para [command], ou nulo se o comando é encadeado ou está vazio. */
     fun ruleFor(command: String): String? {
         val tokens = simpleTokens(command) ?: return null
         val tool = tokens[0]
-        return when {
-            tool in READ_ONLY_TOOLS -> tool
-            tool == "git" && tokens.getOrNull(1) in READ_ONLY_GIT && gitArgsAreSafe(tokens) -> "git ${tokens[1]}"
-            else -> null
+        if (tool in SUBCOMMAND_TOOLS) {
+            tokens.getOrNull(1)?.takeUnless { it.startsWith("-") }?.let { return "$tool $it" }
         }
+        return tool
     }
 
     /** Verdadeiro se [command] é simples e começa exatamente pelos termos de [rule]. */
     fun matches(rule: String, command: String): Boolean {
         val tokens = simpleTokens(command) ?: return false
         val ruleTokens = rule.trim().split(Regex("\\s+"))
-        if (tokens[0] == "git" && !gitArgsAreSafe(tokens)) return false
         return tokens.size >= ruleTokens.size && ruleTokens.indices.all { tokens[it] == ruleTokens[it] }
     }
-
-    private fun gitArgsAreSafe(tokens: List<String>) =
-        tokens.drop(2).all { !it.startsWith("-") || it in GIT_SAFE_FLAGS || GIT_COUNT_FLAG.matches(it) }
 
     private fun simpleTokens(command: String): List<String>? {
         val text = command.trim()
