@@ -14,6 +14,13 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
           submodules: recursive
+      # Outro applicationId permite instalar ao lado do app oficial: a assinatura de debug
+      # difere da release, então o Android recusaria a atualização por cima.
+      - name: Gera o APK com id e nome de teste
+        run: |
+          sed -i 's|applicationId = "com.jarves.mh"|applicationId = "com.jarves.mh"\n        applicationIdSuffix = ".teste"|' app/build.gradle.kts
+          sed -i 's|<string name="app_name">Mobile Harness</string>|<string name="app_name">Mobile Harness (teste)</string>|' app/src/main/res/values/strings.xml
+          grep -n 'applicationIdSuffix' app/build.gradle.kts
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
