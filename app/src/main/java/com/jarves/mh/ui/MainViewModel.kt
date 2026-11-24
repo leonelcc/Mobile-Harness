@@ -43,6 +43,9 @@ import com.jarves.mh.model.ProviderProfile
 import com.jarves.mh.model.RuntimeEvent
 import com.jarves.mh.model.ApprovalChoice
 import com.jarves.mh.model.ToolRequest
+import com.jarves.mh.runtime.ClaudeLoginMode
+import com.jarves.mh.runtime.ClaudeLoginSession
+import com.jarves.mh.runtime.ClaudeLoginState
 import com.jarves.mh.model.WorkspaceEntry
 import com.jarves.mh.model.projectSlug
 import com.jarves.mh.model.generateQuickChatIdentity
@@ -327,6 +330,7 @@ data class AppUiState(
     ),
     val pendingAttachments: List<ChatAttachment> = emptyList(),
     val pendingApproval: ToolRequest? = null,
+    val loginDialogOpen: Boolean = false,
     val changes: List<ChangeItem> = emptyList(),
     val activity: List<ActivityItem> = emptyList(),
     val liveProcess: List<ActivityItem> = emptyList(),
@@ -470,6 +474,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         .takeIf(String::isNotBlank)
         ?.let(AgentKind::fromStored)
         ?: initialAgentKind
+    private val claudeLogin = ClaudeLoginSession(application, viewModelScope)
+    val claudeLoginState: StateFlow<ClaudeLoginState> = claudeLogin.state
+
+    fun openClaudeLogin() = _state.update { it.copy(loginDialogOpen = true) }
+    fun startClaudeLogin(mode: ClaudeLoginMode) = claudeLogin.start(mode)
+    fun submitClaudeLoginCode(code: String) = claudeLogin.submitCode(code)
+    fun closeClaudeLogin() {
+        claudeLogin.cancel()
+        _state.update { it.copy(loginDialogOpen = false) }
+    }
+
     private val antigravityAuthController = AntigravityAuthController(
         application,
         preferences.antigravitySignedIn,
@@ -4739,6 +4754,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val busy = current.isRunning || current.androidBuildRunning
         when (command) {
             SlashCommand.Help -> replyInChat(typed, SLASH_HELP_TEXT)
+            SlashCommand.Login -> openClaudeLogin()
             SlashCommand.Status -> replyInChat(
                 typed,
                 buildString {

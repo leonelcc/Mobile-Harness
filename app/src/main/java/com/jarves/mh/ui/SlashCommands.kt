@@ -12,6 +12,7 @@ sealed interface SlashCommand {
     data object Help : SlashCommand
     data object Clear : SlashCommand
     data object Status : SlashCommand
+    data object Login : SlashCommand
 
     /** [model] nulo significa "mostrar o modelo atual". */
     data class Model(val model: String?) : SlashCommand
@@ -28,6 +29,7 @@ fun parseSlashCommand(input: String): SlashCommand? {
         // /new existe porque quem vem do Claude Code usa /clear; os dois abrem um chat novo.
         "clear", "new" -> SlashCommand.Clear
         "status" -> SlashCommand.Status
+        "login" -> SlashCommand.Login
         "model" -> SlashCommand.Model(argument)
         else -> null
     }
@@ -39,6 +41,7 @@ const val SLASH_HELP_TEXT = """Commands handled by Mobile Harness:
 /model <id> – switch model (for example /model sonnet or /model claude-sonnet-5-5)
 /clear – start a new chat (also /new)
 /status – show agent, provider, model and project
+/login – sign in to Claude (subscription, console or SSO)
 /help – show this list
 
 Any other /command is sent to the agent as a normal message."""

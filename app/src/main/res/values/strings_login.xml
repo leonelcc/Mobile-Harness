@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Textos do /login. Só em inglês por enquanto; o Android usa este arquivo nos demais idiomas. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="login_title">Sign in to Claude</string>
+    <string name="login_subscription">Claude subscription (Pro / Max)</string>
+    <string name="login_console">Anthropic Console (API billing)</string>
+    <string name="login_sso">Single sign-on (SSO)</string>
+    <string name="login_starting">Starting sign-in…</string>
+    <string name="login_open_hint">Open the link, sign in, then paste the code that Claude shows you.</string>
+    <string name="login_open">Open link</string>
+    <string name="login_copy">Copy link</string>
+    <string name="login_code_hint">Code</string>
+    <string name="login_submit">Submit</string>
+    <string name="login_verifying">Verifying…</string>
+    <string name="login_success">Signed in. Your messages now use this account.</string>
+    <string name="login_done">Done</string>
+    <string name="login_cancel">Cancel</string>
+</resources>

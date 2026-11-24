@@ -11,6 +11,7 @@ class SlashCommandsTest {
         assertEquals(SlashCommand.Clear, parseSlashCommand("/clear"))
         assertEquals(SlashCommand.Clear, parseSlashCommand("/new"))
         assertEquals(SlashCommand.Status, parseSlashCommand("/status"))
+        assertEquals(SlashCommand.Login, parseSlashCommand("/login"))
     }
 
     @Test fun parsesModelWithAndWithoutArgument() {
