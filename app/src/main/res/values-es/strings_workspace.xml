@@ -144,7 +144,7 @@
     <string name="ws_remove_attachment">Quitar adjunto</string>
     <string name="ws_review_action">Revisa esta acción</string>
     <string name="ws_reject">Rechazar</string>
-    <string name="ws_allow_once">Permitir una vez</string>
+    <string name="ws_allow_once">Permitir una vez</string><string name="ws_allow_always">Permitir siempre</string>
     <string name="ws_project_files">Archivos del proyecto</string>
     <string name="ws_review_ai_changes">Revisa todo lo que cambió la IA.</string>
     <string name="ws_no_changes_yet">Aún no hay cambios</string>

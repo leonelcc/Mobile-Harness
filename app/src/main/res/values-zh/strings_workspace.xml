@@ -144,7 +144,7 @@
     <string name="ws_remove_attachment">移除附件</string>
     <string name="ws_review_action">审查此操作</string>
     <string name="ws_reject">拒绝</string>
-    <string name="ws_allow_once">允许一次</string>
+    <string name="ws_allow_once">允许一次</string><string name="ws_allow_always">始终允许</string>
     <string name="ws_project_files">项目文件</string>
     <string name="ws_review_ai_changes">审查 AI 所做的全部更改。</string>
     <string name="ws_no_changes_yet">暂无更改</string>

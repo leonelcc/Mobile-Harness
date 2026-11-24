@@ -144,7 +144,7 @@
     <string name="ws_remove_attachment">إزالة المرفق</string>
     <string name="ws_review_action">راجع هذا الإجراء</string>
     <string name="ws_reject">رفض</string>
-    <string name="ws_allow_once">السماح مرة واحدة</string>
+    <string name="ws_allow_once">السماح مرة واحدة</string><string name="ws_allow_always">السماح دائمًا</string>
     <string name="ws_project_files">ملفات المشروع</string>
     <string name="ws_review_ai_changes">راجع كل ما غيّره الذكاء الاصطناعي.</string>
     <string name="ws_no_changes_yet">لا توجد تغييرات بعد</string>

@@ -144,7 +144,7 @@
     <string name="ws_remove_attachment">Remove attachment</string>
     <string name="ws_review_action">Review this action</string>
     <string name="ws_reject">Reject</string>
-    <string name="ws_allow_once">Allow once</string>
+    <string name="ws_allow_once">Allow once</string><string name="ws_allow_always">Always allow</string>
     <string name="ws_project_files">Project files</string>
     <string name="ws_review_ai_changes">Review everything the AI changed.</string>
     <string name="ws_no_changes_yet">No changes yet</string>

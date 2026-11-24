@@ -235,6 +235,7 @@ import com.jarves.mh.model.ProviderKind
 import com.jarves.mh.model.ProviderProfile
 import com.jarves.mh.model.inferredDshApiForUrl
 import com.jarves.mh.model.providersForAgent
+import com.jarves.mh.model.ApprovalChoice
 import com.jarves.mh.model.ToolRequest
 import com.jarves.mh.model.WorkspaceEntry
 import com.jarves.mh.model.projectSlug
@@ -4404,7 +4405,7 @@ private fun WorkspaceScreen(
     onStop: () -> Unit,
     onSteerFollowUp: (String) -> Unit,
     onRemoveFollowUp: (String) -> Unit,
-    onApproval: (Boolean) -> Unit,
+    onApproval: (ApprovalChoice) -> Unit,
     onRefreshFiles: () -> Unit,
     onLoadProjectDirectory: (String) -> Unit,
     onCreateWorkspaceEntry: (String, String, Boolean) -> Unit,
@@ -6290,7 +6291,7 @@ private fun ChatTab(
     isRunning: Boolean,
     onSend: (String) -> Unit,
     onStop: () -> Unit,
-    onApproval: (Boolean) -> Unit,
+    onApproval: (ApprovalChoice) -> Unit,
     listState: LazyListState,
     taskStartedAtMillis: Long?,
     taskFinishedAtMillis: Long?,
@@ -7109,7 +7110,7 @@ private fun AttachmentChip(
 }
 
 @Composable
-private fun ApprovalCard(request: ToolRequest, onApproval: (Boolean) -> Unit) {
+private fun ApprovalCard(request: ToolRequest, onApproval: (ApprovalChoice) -> Unit) {
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -7123,8 +7124,14 @@ private fun ApprovalCard(request: ToolRequest, onApproval: (Boolean) -> Unit) {
             }
             request.affectedPaths.forEach { Text("• $it", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { onApproval(false) }, Modifier.weight(1f)) { Text(stringResource(R.string.ws_reject)) }
-                Button(onClick = { onApproval(true) }, Modifier.weight(1f)) { Text(stringResource(R.string.ws_allow_once)) }
+                OutlinedButton(onClick = { onApproval(ApprovalChoice.REJECT) }, Modifier.weight(1f)) { Text(stringResource(R.string.ws_reject)) }
+                Button(onClick = { onApproval(ApprovalChoice.ALLOW_ONCE) }, Modifier.weight(1f)) { Text(stringResource(R.string.ws_allow_once)) }
+            }
+            // Mostra a regra exata para o usuário saber o que está liberando para sempre.
+            request.alwaysAllowRule?.let { rule ->
+                OutlinedButton(onClick = { onApproval(ApprovalChoice.ALLOW_ALWAYS) }, Modifier.fillMaxWidth()) {
+                    Text("${stringResource(R.string.ws_allow_always)}: $rule", fontFamily = FontFamily.Monospace)
+                }
             }
         }
     }

@@ -144,7 +144,7 @@
     <string name="ws_remove_attachment">Удалить вложение</string>
     <string name="ws_review_action">Проверьте это действие</string>
     <string name="ws_reject">Отклонить</string>
-    <string name="ws_allow_once">Разрешить один раз</string>
+    <string name="ws_allow_once">Разрешить один раз</string><string name="ws_allow_always">Всегда разрешать</string>
     <string name="ws_project_files">Файлы проекта</string>
     <string name="ws_review_ai_changes">Проверьте всё, что изменил ИИ.</string>
     <string name="ws_no_changes_yet">Изменений пока нет</string>

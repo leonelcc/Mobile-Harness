@@ -293,7 +293,11 @@ data class ToolRequest(
     val affectedPaths: List<String> = emptyList(),
     val commandPreview: String? = null,
     val risk: RiskLevel,
+    /** Regra que o botão "Always allow" gravaria; nulo esconde o botão. */
+    val alwaysAllowRule: String? = null,
 )
+
+enum class ApprovalChoice { REJECT, ALLOW_ONCE, ALLOW_ALWAYS }
 
 sealed interface RuntimeEvent {
     val sessionId: String
