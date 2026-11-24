@@ -1650,6 +1650,7 @@ class RuntimeInstaller(private val context: Context) {
                 "permissions",
                 JSONObject()
                     .put("allow", claudeWorkspaceToolRules())
+                    .put("deny", claudeProtectedPathRules())
                     .put("defaultMode", "acceptEdits"),
             )
             .put(
@@ -1699,11 +1700,28 @@ class RuntimeInstaller(private val context: Context) {
         stateFile.writeText(state.toString())
     }
 
+    /**
+     * Caminhos que o agente nunca pode escrever com as ferramentas de edição:
+     * o canal de resposta da aprovação (forjar "allow"), o script do hook e as
+     * configurações do Claude (remover o hook). Regras Edit(...) cobrem Write e
+     * NotebookEdit; "//" é caminho absoluto no rootfs.
+     */
+    private fun claudeProtectedPathRules() = org.json.JSONArray().apply {
+        put("Edit(//pocket-bridge/**)")
+        put("Edit(//opt/pocket/**)")
+        put("Edit(//root/.claude/**)")
+        put("Edit(//root/.claude.json)")
+        put("Edit(//etc/claude/**)")
+        // Configurações do próprio projeto também podem liberar o Bash na próxima execução.
+        put("Edit(.claude/**)")
+    }
+
     private fun claudeWorkspaceToolRules() = org.json.JSONArray().apply {
         // Bash fica de fora de propósito: ele passa pelo hook de aprovação.
-        put("Edit")
-        put("Write")
-        put("NotebookEdit")
+        // Edit/Write/NotebookEdit também: com defaultMode "acceptEdits" o Claude
+        // só edita sem perguntar dentro do diretório do projeto; fora dele, em
+        // modo -p, a escrita é negada. Liberar "Edit" geral deixaria o agente
+        // sobrescrever o hook e as configurações para burlar a aprovação.
         put("Read")
         put("Glob")
         put("Grep")
